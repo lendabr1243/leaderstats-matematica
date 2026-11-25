@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderstats - Matemática</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121214;
+      color: #e1e1e6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 { color: #00e676; margin-bottom: 5px; text-align: center; }
+    p { color: #a8a8b3; margin-top: 0; margin-bottom: 20px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    button {
+      background-color: #202024;
+      color: #e1e1e6;
+      border: 2px solid #323238;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.active {
+      background-color: #00e676;
+      color: #121214;
+      border-color: #00e676;
+    }
+    .board {
+      width: 100%;
+      max-width: 500px;
+      background-color: #202024;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px 20px;
+      border-bottom: 1px solid #323238;
+      font-size: 18px;
+    }
+    .row:last-child { border-bottom: none; }
+    .rank { font-weight: bold; width: 40px; }
+    .name { flex-grow: 1; font-weight: 500; }
+    .points { font-weight: bold; color: #00e676; }
+    .top1 .rank { color: #ffd700; }
+    .top2 .rank { color: #c0c0c0; }
+    .top3 .rank { color: #cd7f32; }
+  </style>
+</head>
+<body>
+
+  <h1>🏆 Leaderstats Matemática</h1>
+  <p>Ranking oficial dos desafios da turma</p>
+
+  <div class="tabs">
+    <button id="btnUnidade" class="active" onclick="mudarAba('unidade')">📘 Unidade Atual</button>
+    <button id="btnTotal" onclick="mudarAba('total')">👑 Total Geral</button>
+  </div>
+
+  <div class="board" id="leaderboard">
+    <div class="row">Carregando pontos...</div>
+  </div>
+
+  <script>
+    const LINK_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfr6Kw8CJ2wUGkhAGPMIxnC03s2L9yXICdC50hx-9qIorLpmuEHm5e2DzwLwh_zyxwz1BOcRRT4Eln/pub?output=csv";
+
+    let dadosAlunos = [];
+    let abaAtual = 'unidade';
+
+    async function carregarDados() {
+      try {
+        const resposta = await fetch(LINK_PLANILHA + "&t=" + new Date().getTime());
+        const texto = await resposta.text();
+        const linhas = texto.split(/\r?\n/).slice(1);
+
+        dadosAlunos = linhas
+          .map(linha => {
+            const colunas = linha.split(',');
+            if (colunas.length < 3 || !colunas[0].trim()) return null;
+            return {
+              nome: colunas[0].trim(),
+              unidade: parseFloat(colunas[1]) || 0,
+              total: parseFloat(colunas[2]) || 0
+            };
+          })
+          .filter(aluno => aluno !== null);
+
+        renderizar();
+      } catch (erro) {
+        document.getElementById('leaderboard').innerHTML = 
+          '<div class="row">Erro ao carregar os pontos!</div>';
+      }
+    }
+
+    function mudarAba(aba) {
+      abaAtual = aba;
+      document.getElementById('btnUnidade').classList.toggle('active', aba === 'unidade');
+      document.getElementById('btnTotal').classList.toggle('active', aba === 'total');
+      renderizar();
+    }
+
+    function renderizar() {
+      const listaOrdenada = [...dadosAlunos].sort((a, b) => b[abaAtual] - a[abaAtual]);
+      const board = document.getElementById('leaderboard');
+      board.innerHTML = '';
+
+      listaOrdenada.forEach((aluno, index) => {
+        const pos = index + 1;
+        let medalha = `#${pos}`;
+        let classeTop = '';
+
+        if (pos === 1) { medalha = '🥇'; classeTop = 'top1'; }
+        if (pos === 2) { medalha = '🥈'; classeTop = 'top2'; }
+        if (pos === 3) { medalha = '🥉'; classeTop = 'top3'; }
+
+        board.innerHTML += `
+          <div class="row ${classeTop}">
+            <span class="rank">${medalha}</span>
+            <span class="name">${aluno.nome}</span>
+            <span class="points">${aluno[abaAtual]} pts</span>
+          </div>
+        `;
+      });
+    }
+
+    carregarDados();
+  </script>
+</body>
+</html>
